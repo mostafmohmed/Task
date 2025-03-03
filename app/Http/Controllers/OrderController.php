@@ -3,16 +3,52 @@
 namespace App\Http\Controllers;
 use Stripe\PaymentIntent;
 use App\Http\Requests\orderrequesr;
+use App\Http\Resources\OrderusersCollection;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Produect;
 use Gloudemans\Shoppingcart\Facades\Cart;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Srmklive\PayPal\Services\ExpressCheckout;
 use Stripe\Stripe;
 use Stripe\Exception\ApiErrorException;
 class OrderController extends Controller
 {
+
+    public function show($orderId)
+    {
+        // Get the order by ID with its related data
+        $order = Order::with(['user', 'orderItems'])->find($orderId);
+
+        // If order not found, return an error
+        if (!$order) {
+            return response()->json(['error' => 'Order not found'], 404);
+        }
+
+        // Return order details in JSON format (or customize as per your need)
+        return response()->json([
+            'order' => $order,
+            'order_items' => $order->orderItems,
+            'user' => $order->user,
+        ]);
+    }
+
+
+
+    public function orderusers(Request $request){
+        $orders_user=$request->user()->orders;
+return apiresponse(200,'',  new OrderusersCollection($orders_user) );
+    }
+    public function update_orders( $id){
+       $order =Order::find($id);
+       $order->status='deliverd';
+       $order->save();
+return apiresponse(200,' update order sucess');
+    }
     public function checkout( orderrequesr $request){
+        DB::beginTransaction();
+          try {
         $cart=Cart::content();
         if (!$cart) {
 return apiresponse(404,'not fount cart');
@@ -50,6 +86,9 @@ if ($order->payment_method=='paypal') {
             ];
         
         $i++;
+        $produect=Produect::find($value->id);
+        $produect->quantity=$produect->quantity-$value->qty;
+        $produect->save();
     }
   
 
@@ -96,7 +135,20 @@ if ($order->payment_method=='Stripe') {
 }
     ///////////////////
 
-   
+} catch (\Exception $e) {
+    DB::rollBack();  // Rollback the transaction if there is an error
+  return apiresponse(500,'fail process order');  // Optionally, rethrow the exception
+}
         
     }
+
+
+
+
+
+
+
+
+
+
 }

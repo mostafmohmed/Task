@@ -33,8 +33,10 @@ Route::middleware(['auth:sanctum','iscustomer'])->group(function(){
         // Route::delete('delete/{id}','delete');
     });
     Route::post('/logout',[AuthController::class,'logout']);
-    Route::post('/checkout',[OrderController::class,'checkout']);
-    Route::get('/user_details',[AuthController::class,'Userdetails']);
+    Route::post('/orders',[OrderController::class,'checkout']);
+    Route::get('/orders',[OrderController::class,'orderusers']);
+    Route::get('/orders/{id}',[OrderController::class,'show']);
+    Route::put('/cart/{id}/status',[OrderController::class,'update_orders']);
     
 });
 
